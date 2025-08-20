@@ -11,7 +11,7 @@ RUN python -m pip install --upgrade pip \
  && python -m pip install -r requirements.txt
 
 
-COPY app ./app
+COPY . .
 
 RUN useradd -u 10001 -ms /bin/bash appuser
 USER appuser

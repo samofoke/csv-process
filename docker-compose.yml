@@ -1,4 +1,42 @@
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: csv_db
+    environment:
+      - POSTGRES_DB=appdbtest
+      - POSTGRES_USER=sabata
+      - POSTGRES_PASSWORD=apptest
+    #ports:
+    #  - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sabata -d appdbtest"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  server:
+    build:
+      context: ./server
+    container_name: csv_server_dev
+    ports:
+      - "5010:5010"
+    volumes:
+      - ./server:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python - <<'PY'\nimport urllib.request,sys\nu='http://localhost:5010/healthz'\ntry:\n  r=urllib.request.urlopen(u, timeout=2)\n  sys.exit(0 if r.status==200 else 1)\nexcept Exception:\n  sys.exit(1)\nPY",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   client:
     build:
       context: ./client
@@ -11,3 +49,4 @@ services:
 
 volumes:
   client-node-modules:
+  pgdata:
