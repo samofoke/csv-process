@@ -20,8 +20,8 @@ def create_app():
         methods=["GET", "POST"],
     )
 
-    @app.get("/healthz")
-    def healthz():
+    @app.get("/health")
+    def health_check():
         ok = ping()
         return jsonify(status=("ok" if ok else "degraded"), db=ok), (200 if ok else 503)
 
