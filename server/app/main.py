@@ -9,14 +9,26 @@ ALLOWED_ORIGIN = "http://localhost:5173"
 
 def create_app():
     app = Flask(__name__)
-    CORS(app, resources={r"/graphql": {"origins": [ALLOWED_ORIGIN]}}, supports_credentials=True)
+    
+    CORS(
+        app,
+        resources={r"/graphql": {"origins": [ALLOWED_ORIGIN]}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Accept"],
+        methods=["GET", "POST", "OPTIONS"],
+    )
 
     init_pool()
 
     app.add_url_rule(
         "/graphql",
-        view_func=GraphQLView.as_view("graphql_view", schema=schema, graphiql=True),
-        methods=["GET", "POST"],
+        view_func=GraphQLView.as_view(
+            "graphql_view",
+            schema=schema,
+            graphiql=True,
+            multipart_uploads_enabled=True,
+        ),
+        methods=["GET", "POST", "OPTIONS"],
     )
 
     @app.get("/health")

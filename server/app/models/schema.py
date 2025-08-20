@@ -38,7 +38,7 @@ class Sales:
 class Query:
     @strawberry.field
     def hello(self) -> str:
-        return "hello from Flask using Strawberry and PostgreSQL"
+        return "hello from Flask using Strawberry graphql and PostgreSQL"
 
     @strawberry.field
     def db_status(self) -> bool:

@@ -1,10 +1,6 @@
 from __future__ import annotations
-
-import io
-import time
-import logging
-from typing import Dict, Tuple, Any
-
+import io, gzip, time, logging
+from typing import Dict, BinaryIO, Tuple, Any
 from app.config.db.connection import get_cursor
 
 log = logging.getLogger("app.service.csv_import")
@@ -120,11 +116,21 @@ ON CONFLICT (order_id) DO UPDATE SET
 RETURNING 1;
 """
 
+CHUNK_SIZE = 1 << 20
+
+def _get_binary_stream(upload_file: Any) -> BinaryIO:
+
+    if hasattr(upload_file, "stream") and hasattr(upload_file.stream, "read"):
+        return upload_file.stream
+    if hasattr(upload_file, "file") and hasattr(upload_file.file, "read"):
+        return upload_file.file
+    if hasattr(upload_file, "read"):
+        return upload_file
+    raise TypeError(f"Unsupported upload object {type(upload_file)}")
+
 def import_sales_csv(upload_file: Any, source: str) -> Tuple[int, float]:
-    
     result = import_sales_csv_detailed(upload_file, source)
     return result["inserted"], result["duration_ms"]
-
 
 def import_sales_csv_detailed(
     upload_file: Any,
@@ -133,52 +139,48 @@ def import_sales_csv_detailed(
     update_on_conflict: bool = False,
     speed_optimize: bool = True,
 ) -> Dict[str, Any]:
-    
     start = time.perf_counter()
 
-    with get_cursor() as cur:
+    # Normalize to a binary stream and rewind if possible
+    bin_stream = _get_binary_stream(upload_file)
+    if hasattr(bin_stream, "seek"):
+        try: bin_stream.seek(0)
+        except Exception: pass
 
+    # Choose appropriate text stream wrapper
+    filename = getattr(upload_file, "filename", None) or getattr(upload_file, "name", None) or ""
+    if filename.endswith(".gz"):
+        text_stream = io.TextIOWrapper(gzip.GzipFile(fileobj=bin_stream), encoding="utf-8", newline="")
+    else:
+        # utf-8-sig handles BOM if present
+        text_stream = io.TextIOWrapper(bin_stream, encoding="utf-8-sig", newline="")
+
+    with get_cursor() as cur:
         if speed_optimize:
             cur.execute("SET LOCAL synchronous_commit = off")
 
         cur.execute(DDL_SALES)
-
         cur.execute(DDL_STAGE)
 
-        file_obj = getattr(upload_file, "file", upload_file)
-        if hasattr(file_obj, "seek"):
-            try:
-                file_obj.seek(0)
-            except Exception:
-                pass
-
-        text_stream = io.TextIOWrapper(file_obj, encoding="utf-8", newline="")
+        # Stream into staging using COPY
         with cur.copy(COPY_STAGE) as cp:
-            for chunk in iter(lambda: text_stream.read(1024 * 1024), ""):
+            for chunk in iter(lambda: text_stream.read(CHUNK_SIZE), ""):
                 if not chunk:
                     break
                 cp.write(chunk)
 
-        cur.execute(COUNT_TOTAL)
-        total_rows = int(cur.fetchone()[0])
+        # Metrics
+        cur.execute(COUNT_TOTAL);      total_rows   = int(cur.fetchone()[0])
+        cur.execute(COUNT_VALID);      valid_rows   = int(cur.fetchone()[0])
+        cur.execute(COUNT_DUP_IN_FILE);dup_in_file  = int(cur.fetchone()[0] or 0)
 
-        cur.execute(COUNT_VALID)
-        valid_rows = int(cur.fetchone()[0])
+        insert_sql = INSERT_FROM_TYPED_DO_UPDATE if update_on_conflict else INSERT_FROM_TYPED_DO_NOTHING
+        cur.execute(insert_sql);       inserted     = int(cur.rowcount or 0)
 
-        cur.execute(COUNT_DUP_IN_FILE)
-        dup_in_file = int(cur.fetchone()[0] or 0)
-
-        insert_sql = (
-            INSERT_FROM_TYPED_DO_UPDATE if update_on_conflict else INSERT_FROM_TYPED_DO_NOTHING
-        )
-        cur.execute(insert_sql)
-        inserted = int(cur.rowcount or 0)
-
-        invalid_rows = max(0, total_rows - valid_rows)
+        invalid_rows      = max(0, total_rows - valid_rows)
         skipped_conflicts = max(0, valid_rows - inserted)
 
     duration_ms = (time.perf_counter() - start) * 1000.0
-
     payload: Dict[str, Any] = {
         "inserted": inserted,
         "skipped_conflicts": skipped_conflicts,
@@ -194,4 +196,3 @@ def import_sales_csv_detailed(
         source, total_rows, valid_rows, inserted, dup_in_file, skipped_conflicts, invalid_rows, duration_ms
     )
     return payload
-
