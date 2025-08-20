@@ -1,0 +1,88 @@
+# ----------------------------
+# OS & Editor cruft
+# ----------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.orig
+.idea/
+.vscode/
+.fleet/
+
+# ----------------------------
+# Python / Flask
+# ----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+# packaging / build
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+*.egg
+*.egg-info/
+.eggs/
+# environments
+.venv
+venv/
+ENV/
+env/
+.python-version
+# logs
+*.log
+logs/
+# testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.cache/
+# type checking / linters
+.mypy_cache/
+.pytype/
+.pyre/
+ruff_cache/
+.dmypy.json
+# Flask app data
+instance/
+*.db
+*.sqlite3
+
+# ----------------------------
+# Env & secrets
+# ----------------------------
+.env
+.env.*
+!.env.example
+
+# ----------------------------
+# Jupyter (if ever used)
+# ----------------------------
+.ipynb_checkpoints/
+
+# ----------------------------
+# Node / Vite (client)
+# ----------------------------
+client/node_modules/
+client/.pnpm-store/
+client/dist/
+client/.vite/
+client/.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----------------------------
+# Docker / Compose (local data)
+# ----------------------------
+pgdata/
+
