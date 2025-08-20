@@ -1,3 +1,4 @@
+from __future__ import annotations
 import strawberry
 from ..config.db.connection import get_cursor, ping
 

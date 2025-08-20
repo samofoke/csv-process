@@ -5,7 +5,6 @@ from app.config.db.connection import init_pool, ping
 from app.models.schema import schema 
 
 
-
 ALLOWED_ORIGIN = "http://localhost:5173"
 
 def create_app():
