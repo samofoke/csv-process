@@ -1,8 +1,11 @@
 from __future__ import annotations
 import strawberry
+from typing import Optional, List
+from enum import Enum
 from strawberry.file_uploads import Upload
 from ..config.db.connection import get_cursor, ping
 from ..service.csv_import import import_sales_csv_detailed
+from ..service.sales_query import query_sales_page, get_sales_by_id
 
 @strawberry.type
 class ImportResult:
@@ -35,6 +38,36 @@ class Sales:
 
 
 @strawberry.type
+class PageInfo:
+    end_cursor: Optional[str] = strawberry.field(name="endCursor", default=None)
+    has_next_page: bool       = strawberry.field(name="hasNextPage", default=False)
+
+@strawberry.type
+class SalesEdge: cursor: str; node: Sales
+@strawberry.type
+class SalesConnection:
+    edges: List[SalesEdge]
+    page_info: PageInfo = strawberry.field(name="pageInfo")
+
+@strawberry.enum
+class SortDirection(Enum):
+    ASC = "ASC"
+    DESC = "DESC"
+
+@strawberry.input
+class SalesFilter:
+    region: Optional[str] = None
+    country: Optional[str] = None
+    item_type: Optional[str] = strawberry.field(name="itemType", default=None)
+    sales_channel: Optional[str] = strawberry.field(name="salesChannel", default=None)
+    order_priority: Optional[str] = strawberry.field(name="orderPriority", default=None)
+    order_date_from: Optional[str] = strawberry.field(name="orderDateFrom", default=None)
+    order_date_to: Optional[str] = strawberry.field(name="orderDateTo", default=None)
+    min_profit: Optional[float] = strawberry.field(name="minProfit", default=None)
+    max_profit: Optional[float] = strawberry.field(name="maxProfit", default=None)
+    q: Optional[str] = None
+
+@strawberry.type
 class Query:
     @strawberry.field
     def hello(self) -> str:
@@ -50,6 +83,21 @@ class Query:
             cur.execute("SELECT version()")
             (ver,) = cur.fetchone()
             return ver
+
+    @strawberry.field
+    def sales_page(self, first: int = 50, after: Optional[str] = None,
+                   filter: Optional[SalesFilter] = None,
+                   direction: SortDirection = SortDirection.DESC) -> SalesConnection:
+        payload = query_sales_page(first, after, vars(filter) if filter else None, direction.value)
+        edges = [SalesEdge(cursor=e["cursor"], node=Sales(**e["node"])) for e in payload["edges"]]
+        pi = PageInfo(end_cursor=payload["pageInfo"]["endCursor"], has_next_page=payload["pageInfo"]["hasNextPage"])
+        return SalesConnection(edges=edges, page_info=pi)
+
+    @strawberry.field
+    def sales_by_id(self, order_id: strawberry.ID) -> Optional[Sales]:
+        row = get_sales_by_id(int(order_id))
+        return Sales(**row) if row else None
+
 
 @strawberry.type
 class Mutation:

@@ -1,36 +1,85 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { useEffect, useState } from "react";
+import {
+  CssBaseline,
+  Container,
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  CircularProgress,
+} from "@mui/material";
+import UploadCsv from "./components/uploads/UploadCsv";
+import SalesTable from "./components/table/SalesTable";
+import type { ImportResult } from "./types/types";
+import { hasAnySales } from "./lib/graphql";
 
-function App() {
-  const [count, setCount] = useState(0);
+type View = "checking" | "upload" | "table";
+
+export default function App() {
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [view, setView] = useState<View>("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const exists = await hasAnySales();
+        if (!cancelled) setView(exists ? "table" : "upload");
+      } catch {
+        if (!cancelled) setView("upload");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <h3>Well lets see if everything works now.</h3>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <CssBaseline />
+      <AppBar position="static" color="default" elevation={1}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flex: 1 }}>
+            CSV → GraphQL → PostgreSQL
+          </Typography>
+          {importResult && (
+            <Typography variant="body2" color="text.secondary">
+              Inserted: {importResult.inserted.toLocaleString()} • Duration:{" "}
+              {importResult.durationMs.toFixed(0)} ms
+            </Typography>
+          )}
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        {view === "checking" && (
+          <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {view === "upload" && (
+          <UploadCsv
+            onSuccess={(r) => {
+              setImportResult(r);
+              setView("table");
+            }}
+          />
+        )}
+
+        {view === "table" && (
+          <Box>
+            {/* skipInitialProbe avoids double-probing since App already checked */}
+            <SalesTable
+              skipInitialProbe
+              onBackToUpload={() => {
+                setImportResult(null);
+                setView("upload");
+              }}
+            />
+          </Box>
+        )}
+      </Container>
     </>
   );
 }
-
-export default App;
