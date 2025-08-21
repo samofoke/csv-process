@@ -38,7 +38,7 @@ query SalesPage($first:Int!,$after:String,$filter:SalesFilter,$direction:SortDir
 function fmt(n: number | undefined | null) {
   if (n === undefined || n === null) return "";
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
-    n,
+    n
   );
 }
 function useDebouncedValue<T>(value: T, delay = 350): T {
@@ -99,7 +99,7 @@ export default function SalesTable({
       }>(
         SALES_PAGE_QUERY,
         { first: 50, after: null, filter, direction },
-        { signal: page1AbortRef.current.signal },
+        { signal: page1AbortRef.current.signal }
       );
 
       if (token !== requestTokenRef.current) return;
@@ -170,7 +170,7 @@ export default function SalesTable({
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => entries.some((e) => e.isIntersecting) && loadMore(),
-      { root: null, rootMargin: "800px 0px 800px 0px", threshold: 0 },
+      { root: null, rootMargin: "800px 0px 800px 0px", threshold: 0 }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -191,16 +191,14 @@ export default function SalesTable({
   }
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={4}>
       <Paper elevation={1} sx={{ p: 2, borderRadius: 3 }}>
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="space-between"
         >
-          <Typography variant="h6">
-            Sales (GraphQL · Infinite Scroll)
-          </Typography>
+          <Typography variant="h6">Salees reacords information</Typography>
           {onBackToUpload && (
             <Button variant="text" onClick={onBackToUpload}>
               Import another file
@@ -212,29 +210,18 @@ export default function SalesTable({
       <Paper elevation={1} sx={{ p: 2, borderRadius: 3 }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
-            label="Search (live)"
-            placeholder="q over region/country/itemType"
+            label="Search Live"
+            placeholder="region or country"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             fullWidth
           />
           <TextField
-            label="Country (exact)"
+            label="Country Exact Name"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             sx={{ minWidth: 220 }}
           />
-          <Select
-            value={direction}
-            onChange={(e) => setDirection(e.target.value as any)}
-            sx={{ minWidth: 180 }}
-          >
-            <MenuItem value="DESC">Newest first</MenuItem>
-            <MenuItem value="ASC">Oldest first</MenuItem>
-          </Select>
-          <Button variant="contained" onClick={applyFilters}>
-            Apply Filters
-          </Button>
         </Stack>
       </Paper>
 

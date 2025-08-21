@@ -47,7 +47,6 @@ def create_app():
             return resp
         return None
 
-    # Optional: ensure CORS headers on normal responses too
     @app.after_request
     def _cors_headers(resp):
         if request.path == "/graphql":

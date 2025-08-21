@@ -3,20 +3,17 @@ import {
   CssBaseline,
   Container,
   AppBar,
-  Toolbar,
-  Typography,
   Box,
   CircularProgress,
 } from "@mui/material";
 import UploadCsv from "./components/uploads/UploadCsv";
 import SalesTable from "./components/table/SalesTable";
-import type { ImportResult } from "./types/types";
 import { hasAnySales } from "./lib/graphql";
+import "./App.css";
 
 type View = "checking" | "upload" | "table";
 
 export default function App() {
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [view, setView] = useState<View>("checking");
 
   useEffect(() => {
@@ -37,19 +34,7 @@ export default function App() {
   return (
     <>
       <CssBaseline />
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flex: 1 }}>
-            CSV → GraphQL → PostgreSQL
-          </Typography>
-          {importResult && (
-            <Typography variant="body2" color="text.secondary">
-              Inserted: {importResult.inserted.toLocaleString()} • Duration:{" "}
-              {importResult.durationMs.toFixed(0)} ms
-            </Typography>
-          )}
-        </Toolbar>
-      </AppBar>
+      <AppBar position="static" color="default" elevation={1}></AppBar>
 
       <Container maxWidth="lg" sx={{ py: 3 }}>
         {view === "checking" && (
@@ -61,7 +46,6 @@ export default function App() {
         {view === "upload" && (
           <UploadCsv
             onSuccess={(r) => {
-              setImportResult(r);
               setView("table");
             }}
           />
