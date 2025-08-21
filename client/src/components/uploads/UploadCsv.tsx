@@ -84,16 +84,6 @@ export default function UploadCsv({ onSuccess }: Props) {
           fullWidth
         />
 
-        <FormControlLabel
-          control={
-            <Switch
-              checked={upsert}
-              onChange={(e) => setUpsert(e.target.checked)}
-            />
-          }
-          label="Update on conflict (upsert)"
-        />
-
         <Stack direction="row" spacing={2} alignItems="center">
           <Button
             variant="contained"
@@ -108,7 +98,7 @@ export default function UploadCsv({ onSuccess }: Props) {
         {error && <Alert severity="error">{error}</Alert>}
 
         <Typography variant="body2" color="text.secondary">
-          The file is streamed to PostgreSQL via COPY (no full-file buffering).
+          The file is processed on the server.
         </Typography>
       </Stack>
     </Paper>
