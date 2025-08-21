@@ -12,6 +12,11 @@ But if you running the nre version of docker.
 docker compose up --build
 ```
 
+### The url for the project is:
+```
+http://localhost:5173/
+```
+
 ### The project set up for the client.
 
 - the project uses flask with python in the nack and the use of GraphQL
